@@ -1,21 +1,15 @@
-from typing import Sequence, Union
+from typing import Dict, Sequence, Union
+from dataclasses import dataclass
 
 
+@dataclass
 class InfoMessage:
     """Информационное сообщение о тренировке."""
-
-    def __init__(self,
-                 training_type: str,
-                 duration: float,
-                 distance: float,
-                 speed: float,
-                 calories: float,
-                 ) -> None:
-        self.training_type = training_type
-        self.duration = duration
-        self.distance = distance
-        self.speed = speed
-        self.calories = calories
+    training_type: str
+    duration: float
+    distance: float
+    speed: float
+    calories: float
 
     def get_message(self) -> str:
         """Получить сообщение о тренировке."""
@@ -51,7 +45,7 @@ class Training:
 
     def get_spent_calories(self) -> float:
         """Получить количество затраченных калорий."""
-        pass
+        raise NotImplementedError
 
     def show_training_info(self) -> InfoMessage:
         """Вернуть информационное сообщение о выполненной тренировке."""
@@ -68,11 +62,11 @@ class Running(Training):
 
     def get_spent_calories(self) -> float:
         """Получить количество затраченных калорий."""
-        self.run_coeff_calorie_1 = 18
-        self.run_coeff_calorie_2 = 20
-        return ((self.run_coeff_calorie_1
+        self.RUN_COEFF_MULTIPL = 18
+        self.RUN_COEFF_SUBTRACT = 20
+        return ((self.RUN_COEFF_MULTIPL
                 * self.get_mean_speed()
-                - self.run_coeff_calorie_2)
+                - self.RUN_COEFF_SUBTRACT)
                 * self.weight
                 / self.M_IN_KM
                 * self.duration
@@ -92,15 +86,15 @@ class SportsWalking(Training):
 
     def get_spent_calories(self) -> float:
         """Получить количество затраченных калорий."""
-        self.sw_coeff_calorie_1 = 0.035
-        self.sw_coeff_calorie_2 = 0.029
-        self.sw_coeff_calorie_3 = 2
-        return (self.sw_coeff_calorie_1
+        self.SW_COEFF_MULTIPL_FOR_WEIGHT = 0.035
+        self.SW_COEFF_MULTIPL = 0.029
+        self.SW_COEFF_MULTIPL_FOR_MEAN_SPEED = 2
+        return (self.SW_COEFF_MULTIPL_FOR_WEIGHT
                 * self.weight
                 + ((self.get_mean_speed()
-                   ** self.sw_coeff_calorie_3
+                   ** self.SW_COEFF_MULTIPL_FOR_MEAN_SPEED
                    // self.height))
-                * self.sw_coeff_calorie_2
+                * self.SW_COEFF_MULTIPL
                 * self.weight) * (self.duration * self.MIN_IN_HR)
 
 
@@ -127,19 +121,22 @@ class Swimming(Training):
 
     def get_spent_calories(self) -> float:
         """Получить количество затраченных калорий."""
-        self.swim_coeff_calories_1 = 1.1
-        self.swim_coeff_calories_2 = 2
-        return ((self.get_mean_speed() + self.swim_coeff_calories_1)
-                * self.swim_coeff_calories_2
+        self.SWIM_COEFF_FOR_MEAN_SPEED = 1.1
+        self.SWIM_COEFF_MULTIPL = 2
+        return ((self.get_mean_speed() + self.SWIM_COEFF_FOR_MEAN_SPEED)
+                * self.SWIM_COEFF_MULTIPL
                 * self.weight)
 
 
 def read_package(workout_type: str,
                  data: Sequence[Union[int, float]]) -> Training:
     """Прочитать данные полученные от датчиков."""
-    packages: dict = {'SWM': Swimming,
-                      'RUN': Running,
-                      'WLK': SportsWalking}
+    packages: Dict[str, type[Training]] = {'SWM': Swimming,
+                                           'RUN': Running,
+                                           'WLK': SportsWalking}
+    if workout_type not in packages:
+        raise KeyError(f'{workout_type} - неизвестный тип тренировки')
+
     return packages[workout_type](*data)
 
 
